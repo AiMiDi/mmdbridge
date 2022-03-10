@@ -91,11 +91,25 @@ namespace oguna
 		{
 			return Get().Utf8ToCp932_Impl(src, size, out);
 		}
+		/// UTF8からCP932(std::string)へ変換する
+		static std::string Utf8ToCp932(const char* src, int length)
+		{
+			std::string res;
+			Get().Utf8ToCp932_Impl(src, length, &res);
+			return res;
+		}
 
 		/// CP932からUTF8(std::string)へ変換する
 		static int Cp932ToUtf8(const char* src, int length, std::string *out)
 		{
 			return Get().Cp932ToUtf8_Impl(src, length, out);
+		}
+		/// CP932からUTF8(std::string)へ変換する
+		static std::string Cp932ToUtf8(const char* src, int length)
+		{
+			std::string res;
+			Get().Cp932ToUtf8_Impl(src, length, &res);
+			return res;
 		}
 
 		/// CP932からUTF16(std::wstring)へ変換する
@@ -103,11 +117,25 @@ namespace oguna
 		{
 			return Get().Cp932ToUtf16_Impl(src, length, out);
 		}
+		/// CP932からUTF16(std::wstring)へ変換する
+		static std::wstring Cp932ToUtf16(const char* src, int length)
+		{
+			std::wstring res;
+			Get().Cp932ToUtf16_Impl(src, length, &res);
+			return res;
+		}
 
 		/// UTF16からCP932(std::string)へ変換する
 		static int Utf16ToCp932(const wchar_t *src, int length, std::string *out)
 		{
 			return Get().Utf16ToCp932_Impl(src, length, out);
+		}
+		/// UTF16からCP932(std::string)へ変換する
+		static std::string Utf16ToCp932(const wchar_t* src, int length)
+		{
+			std::string res;
+			Get().Utf16ToCp932_Impl(src, length, &res);
+			return res;
 		}
 
 		/// UTF8からUTF16(std::wstring)へ変換する
@@ -115,11 +143,25 @@ namespace oguna
 		{
 			return Get().Utf8ToUtf16_Impl(src, length, out);
 		}
+		/// UTF8からUTF16(std::wstring)へ変換する
+		static std::wstring Utf8ToUtf16(const char* src, int length)
+		{
+			std::wstring res;
+			Get().Utf8ToUtf16_Impl(src, length, &res);
+			return res;
+		}
 
 		/// UTF16からUTF8(std::string)へ変換する
 		static int Utf16ToUtf8(const wchar_t* src, int length, std::string* out)
 		{
 			return Get().Utf16ToUtf8_Impl(src, length, out);
+		}
+		/// UTF16からUTF8(std::string)へ変換する
+		static std::string Utf16ToUtf8(const wchar_t* src, int length)
+		{
+			std::string res;
+			Get().Utf16ToUtf8_Impl(src, length, &res);
+			return res;
 		}
 
 		static std::string wstringTostring(const std::wstring& src)

@@ -116,16 +116,16 @@ static bool end_pmx_export()
 			{
 				frame.frame = frame_number - 1;
 				frame.weight = 0.0f;
-				vmd->face_frames.push_back(frame);
+				vmd->face_frames.push_back(std::move(frame));
 			}
 
 			frame.frame = frame_number;
 			frame.weight = 1.0f;
-			vmd->face_frames.push_back(frame);
+			vmd->face_frames.push_back(std::move(frame));
 
 			frame.frame = frame_number + 1;
 			frame.weight = 0.0f;
-			vmd->face_frames.push_back(frame);
+			vmd->face_frames.push_back(std::move(frame));
 		}
 		++frame_number;
 	}
@@ -201,7 +201,12 @@ static void export_pmx(int currentframe, bool isfirst)
 		pmx::PmxBone& center = pmx->bones[0];
 		center.bone_name = std::wstring(L"センター");
 		center.parent_index = -1;
-		center.bone_flag = (0x0001 | 0x0002 | 0x0004 | 0x0008 | 0x0010);
+		center.bone_flag.indexed_tail_position = true;
+		center.bone_flag.Rotatable = true;
+		center.bone_flag.Translatable = true;
+		center.bone_flag.Is_visible = true;
+		center.bone_flag.Rotatable = true;
+		
 		center.offset[1] = 1;
 
 		int vertex_offset = 0;
@@ -279,7 +284,7 @@ static void export_pmx(int currentframe, bool isfirst)
 
 	{
 		PMXPtr pmx = archive.file_data.pmx;
-		PmxMorphPtr morph = PmxMorphPtr(new pmx::PmxMorph);
+		PmxMorphPtr morph = std::make_shared<pmx::PmxMorph>();
 		const int vertex_count = static_cast<int>(archive.base_vertex_list.size());
 		morph->morph_type = pmx::MorphType::Vertex;
 		morph->category = pmx::MorphCategory::Other;
@@ -313,7 +318,7 @@ static void export_pmx(int currentframe, bool isfirst)
 		}
 		morph->morph_name =
 			std::wstring(L"frame_") + umbase::UMStringUtil::number_to_wstring(currentframe);
-		archive.morph_list.push_back(morph);
+		archive.morph_list.push_back(std::move(morph));
 	}
 }
 

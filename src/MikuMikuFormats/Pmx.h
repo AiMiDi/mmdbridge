@@ -285,6 +285,39 @@ namespace pmx
 		void Read(std::istream *stream, PmxSetting *settingn);
 	};
 
+	/* Bone flags(2bytes) */
+	struct PmxBoneFlags
+	{
+		bool	indexed_tail_position : 1;      /* The position of the tail (tip) of the bone, 0 is the relative position of the connection, and 1 is the connection sub bone */
+		bool	Rotatable : 1;                  /* Enable rotation */
+		bool	Translatable : 1;               /* Enable move */
+		bool	Is_visible : 1;                 /* Enable display */
+		bool	Enabled : 1;                    /* Enable action */
+		bool	IK : 1;                         /* Enable IK bone */
+		bool : 2;                               /* seize a seat */
+		bool	Inherit_rotation : 1;           /* Turn on inherit bone rotation */
+		bool	Inherit_translation : 1;        /* Enable inherited bone movement */
+		bool	Fixed_axis : 1;                 /* Enable axis limit */
+		bool	Local_coordinate : 1;           /* Enable local axis */
+		bool	Physics_after_deform : 1;       /* First deform, then calculate physics */
+		bool	External_parent_deform : 1;     /* External bony deformation */
+		bool : 2;                               /* seize a seat */
+		PmxBoneFlags()
+		{
+			this->indexed_tail_position = 0;
+			this->Rotatable = 0;
+			this->Translatable = 0;
+			this->Is_visible = 0;
+			this->Enabled = 0;
+			this->IK = 0;
+			this->Inherit_rotation = 0;
+			this->Inherit_translation = 0;
+			this->Fixed_axis = 0;
+			this->Local_coordinate = 0;
+			this->Physics_after_deform = 0;
+			this->External_parent_deform = 0;
+		}
+	};
 	/// ボーン
 	class PmxBone
 	{
@@ -292,7 +325,7 @@ namespace pmx
 		PmxBone()
 			: parent_index(0)
 			, level(0)
-			, bone_flag(0)
+			, bone_flag(PmxBoneFlags())
 			, target_index(0)
 			, grant_parent_index(0)
 			, grant_weight(0.0f)
@@ -322,7 +355,7 @@ namespace pmx
 		/// 階層
 		int level;
 		/// ボーンフラグ
-		uint16_t bone_flag;
+		PmxBoneFlags bone_flag;
 		/// 座標オフセット(has Target)
 		float offset[3];
 		/// 接続先ボーンインデックス(not has Target)

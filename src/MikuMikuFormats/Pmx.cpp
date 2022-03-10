@@ -242,28 +242,28 @@ namespace pmx
 		stream->read((char*) this->position, sizeof(float) * 3);
 		this->parent_index = ReadIndex(stream, setting->bone_index_size);
 		stream->read((char*) &this->level, sizeof(int));
-		stream->read((char*) &this->bone_flag, sizeof(uint16_t));
-		if (this->bone_flag & 0x0001) {
+		stream->read((char*) &this->bone_flag, sizeof(PmxBoneFlags));
+		if (this->bone_flag.indexed_tail_position == true) {
 			this->target_index = ReadIndex(stream, setting->bone_index_size);
 		}
 		else {
 			stream->read((char*)this->offset, sizeof(float) * 3);
 		}
-		if (this->bone_flag & (0x0100 | 0x0200)) {
+		if (this->bone_flag.Inherit_rotation == true || this->bone_flag.Inherit_translation == true) {
 			this->grant_parent_index = ReadIndex(stream, setting->bone_index_size);
 			stream->read((char*) &this->grant_weight, sizeof(float));
 		}
-		if (this->bone_flag & 0x0400) {
+		if (this->bone_flag.Fixed_axis == true) {
 			stream->read((char*)this->lock_axis_orientation, sizeof(float) * 3);
 		}
-		if (this->bone_flag & 0x0800) {
+		if (this->bone_flag.Local_coordinate == true) {
 			stream->read((char*)this->local_axis_x_orientation, sizeof(float) * 3);
 			stream->read((char*)this->local_axis_y_orientation, sizeof(float) * 3);
 		}
-		if (this->bone_flag & 0x2000) {
+		if (this->bone_flag.External_parent_deform == true) {
 			stream->read((char*) &this->key, sizeof(int));
 		}
-		if (this->bone_flag & 0x0020) {
+		if (this->bone_flag.IK == true) {
 			this->ik_target_bone_index = ReadIndex(stream, setting->bone_index_size);
 			stream->read((char*) &ik_loop, sizeof(int));
 			stream->read((char*) &ik_loop_angle_limit, sizeof(float));

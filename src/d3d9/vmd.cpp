@@ -30,6 +30,26 @@ template <class T> std::string to_string(T value)
 {
 	return umbase::UMStringUtil::number_to_string(value);
 }
+template <class T> std::string to_wstring(T value)
+{
+	return umbase::UMStringUtil::number_to_wstring(value);
+}
+
+inline std::wstring GetPmdFilename(const int& pmd_index) {
+	const char* file_name = ExpGetPmdFilename(pmd_index);
+	return oguna::EncodingConverter::Cp932ToUtf16(file_name, strnlen(file_name, MAX_PATH));
+}
+
+inline std::wstring GetPmdBoneName(const int& pmd_index, const int& bone_index) {
+	const char* bone_name = ExpGetPmdBoneName(pmd_index, bone_index);
+	return oguna::EncodingConverter::Cp932ToUtf16(bone_name, strlen(bone_name));
+}
+
+inline std::wstring GetPmdMorphName(const int& pmd_index, const int& morph_index) {
+	const char* morph_name = ExpGetPmdBoneName(pmd_index, morph_index);
+	return oguna::EncodingConverter::Cp932ToUtf16(morph_name, strlen(morph_name));
+}
+
 
 typedef std::shared_ptr<pmd::PmdModel> PMDPtr;
 typedef std::shared_ptr<pmx::PmxModel> PMXPtr;
@@ -45,24 +65,23 @@ public:
 	PMXPtr pmx;
 	std::map<int, int> parent_index_map;
 	std::map<int, std::string> bone_name_map;
-	std::map<int, int> physics_bone_map;
-	std::map<int, int> ik_bone_map;
-	std::map<int, int> ik_frame_bone_map;
-	std::map<int, int> fuyo_bone_map;
-	std::map<int, int> fuyo_target_map;
+	std::map<int, pmd::RigidBodyType> physics_bone_map;
+	std::map<int, bool> ik_bone_map;
+	std::map<int, bool> ik_frame_bone_map;
+	std::map<int, bool> fuyo_bone_map;
+	std::map<int, bool> fuyo_target_map;
 
-	FileDataForVMD(const FileDataForVMD& data) {
-		this->vmd = data.vmd;
-		this->pmd = data.pmd;
-		this->pmx = data.pmx;
-		this->parent_index_map = data.parent_index_map;
-		this->bone_name_map = data.bone_name_map;
-		this->physics_bone_map = data.physics_bone_map;
-		this->ik_bone_map = data.ik_bone_map;
-		this->ik_frame_bone_map = data.ik_frame_bone_map;
-		this->fuyo_bone_map = data.fuyo_bone_map;
-		this->fuyo_target_map = data.fuyo_target_map;
-	}
+	FileDataForVMD(FileDataForVMD&& data) noexcept :
+		vmd(std::move(data.vmd)),
+		pmd(std::move(data.pmd)),
+		pmx(std::move(data.pmx)),
+		parent_index_map(std::move(data.parent_index_map)),
+		bone_name_map(std::move(data.bone_name_map)),
+		physics_bone_map(std::move(data.physics_bone_map)),
+		ik_bone_map(std::move(data.ik_bone_map)),
+		ik_frame_bone_map(std::move(data.ik_frame_bone_map)),
+		fuyo_bone_map(std::move(data.fuyo_bone_map)),
+		fuyo_target_map(std::move(data.fuyo_target_map)){}
 };
 
 class VMDArchive {
@@ -73,7 +92,7 @@ public:
 		return instance; 
 	}
 
-	std::map<std::string, int> file_path_map;
+	std::map<std::wstring, int> file_path_map;
 
 	std::vector<FileDataForVMD> data_list;
 
@@ -91,18 +110,8 @@ public:
 	~VMDArchive() {
 	}
 private:
-	VMDArchive() {}
+	VMDArchive():export_mode(0) {}
 };
-
-static umstring to_umpath(const char* path)
-{
-	const int size = ::MultiByteToWideChar(CP_ACP, 0, (LPCSTR)path, -1, NULL, 0);
-	wchar_t* utf16 = new wchar_t[size];
-	::MultiByteToWideChar(CP_ACP, 0, (LPCSTR)path, -1, (LPWSTR)utf16, size);
-	std::wstring wstr(utf16);
-	delete[] utf16;
-	return umbase::UMStringUtil::wstring_to_utf16(wstr);
-}
 
 static bool start_vmd_export(
 	const std::string& directory_path,
@@ -124,7 +133,7 @@ static bool start_vmd_export(
 	archive.export_mode = export_mode;
 	const int pmd_num = ExpGetPmdNum();
 	for (int i = 0; i < pmd_num; ++i) {
-		const char* filename = ExpGetPmdFilename(i);
+		std::wstring filename = GetPmdFilename(i);
 		if (archive.file_path_map.find(filename) != archive.file_path_map.end()) {
 			continue;
 		}
@@ -132,13 +141,13 @@ static bool start_vmd_export(
 		if (pmd)
 		{
 			FileDataForVMD data;
-			data.pmd = pmd;
-			archive.data_list.push_back(data);
-			archive.file_path_map[filename] = archive.data_list.size() - 1;
+			data.pmd = std::move(pmd);
+			archive.data_list.push_back(std::move(data));
+			archive.file_path_map.insert({ std::move(filename),archive.data_list.size() - 1 });
 		}
 		else
 		{
-			PMXPtr pmx = PMXPtr(new pmx::PmxModel());
+			PMXPtr pmx = std::make_shared<pmx::PmxModel>();
 			std::ifstream stream(filename, std::ios_base::binary);
 			if (stream.good())
 			{
@@ -146,9 +155,9 @@ static bool start_vmd_export(
 				pmx->Read(&stream);
 			}
 			FileDataForVMD data;
-			data.pmx = pmx;
-			archive.data_list.push_back(data);
-			archive.file_path_map[filename] = archive.data_list.size() - 1;
+			data.pmx = std::move(pmx);
+			archive.data_list.push_back(std::move(data));
+			archive.file_path_map.insert({std::move(filename),archive.data_list.size() - 1 });
 		}
 	}
 
@@ -164,13 +173,11 @@ static bool end_vmd_export()
 
 	for (int i = 0; i < pmd_num; ++i)
 	{
-		const char* filename = ExpGetPmdFilename(i);
-		FileDataForVMD& file_data = archive.data_list.at(archive.file_path_map[filename]);
+		FileDataForVMD& file_data = archive.data_list[archive.file_path_map[GetPmdFilename(i)]];
 		if (file_data.vmd)
 		{
-			std::string dst;
-			oguna::EncodingConverter::Cp932ToUtf8(filename, strnlen(filename, 4096), &dst);
-			const umstring umstr = umbase::UMStringUtil::utf8_to_utf16(dst);
+			std::wstring dst = GetPmdFilename(i);
+			const umstring umstr = umbase::UMStringUtil::wstring_to_utf16(dst);
 			 umstring filename = umbase::UMPath::get_file_name(umstr);
 			const umstring extension = umbase::UMStringUtil::utf8_to_utf16(".vmd");
 			filename.replace(filename.size() - 4, 4, extension);
@@ -216,11 +223,11 @@ static void init_file_data(FileDataForVMD& data)
 				{
 					if (rigid.rigid_type == pmd::RigidBodyType::ConnectedPhysics)
 					{
-						data.physics_bone_map[bone_index] = 2;
+						data.physics_bone_map[bone_index] = pmd::RigidBodyType::ConnectedPhysics;
 					}
 					else
 					{
-						data.physics_bone_map[bone_index] = 1;
+						data.physics_bone_map[bone_index] = pmd::RigidBodyType::Physics;
 					}
 				}
 			}
@@ -245,7 +252,7 @@ static void init_file_data(FileDataForVMD& data)
 				const int parent_bone = parent_physics_bone_list[i];
 				const pmd::PmdRigidBody& parent_rigid = rigids[bone_to_rigid_map[parent_bone]];
 				if (parent_rigid.rigid_type == pmd::RigidBodyType::BoneConnected) {
-					data.physics_bone_map[parent_bone] = 0;
+					data.physics_bone_map[parent_bone] = pmd::RigidBodyType::BoneConnected;
 				}
 			}
 		}
@@ -262,12 +269,12 @@ static void init_file_data(FileDataForVMD& data)
 			for (int k = 0; k < bone.ik_link_count; ++k)
 			{
 				const pmx::PmxIkLink& link = bone.ik_links[k];
-				data.ik_bone_map[link.link_target] = 1;
-				data.ik_frame_bone_map[i] = 1;
+				data.ik_bone_map[link.link_target] = true;
+				data.ik_frame_bone_map[i] = true;
 			}
-			if ((bone.bone_flag & 0x0100) || (bone.bone_flag & 0x0200)) {
-				data.fuyo_target_map[bone.grant_parent_index] = 1;
-				data.fuyo_bone_map[i] = 1;
+			if (bone.bone_flag.Inherit_rotation == true || bone.bone_flag.Inherit_translation == true) {
+				data.fuyo_target_map[bone.grant_parent_index] = true;
+				data.fuyo_bone_map[i] = true;
 			}
 		}
 
@@ -283,11 +290,11 @@ static void init_file_data(FileDataForVMD& data)
 				if (data.bone_name_map.find(bone_index) != data.bone_name_map.end())
 				{
 					if (rigid.physics_calc_type == 2) {
-						data.physics_bone_map[bone_index] = 2;
+						data.physics_bone_map[bone_index] = pmd::RigidBodyType::ConnectedPhysics;
 					}
 					else
 					{
-						data.physics_bone_map[bone_index] = 1;
+						data.physics_bone_map[bone_index] = pmd::RigidBodyType::Physics;
 					}
 				}
 			}
@@ -312,7 +319,7 @@ static void init_file_data(FileDataForVMD& data)
 				const int parent_bone = parent_physics_bone_list[i];
 				const pmx::PmxRigidBody& parent_rigid = data.pmx->rigid_bodies[bone_to_rigid_map[parent_bone]];
 				if (parent_rigid.physics_calc_type == 0) {
-					data.physics_bone_map[parent_bone] = 0;
+					data.physics_bone_map[parent_bone] = pmd::RigidBodyType::BoneConnected;
 				}
 			}
 		}
@@ -397,8 +404,7 @@ static bool execute_vmd_export(int currentframe)
 	{
 		for (int i = 0; i < pmd_num; ++i)
 		{
-			const char* filename = ExpGetPmdFilename(i);
-			FileDataForVMD& file_data = archive.data_list.at(archive.file_path_map[filename]);
+			FileDataForVMD& file_data = archive.data_list[archive.file_path_map[GetPmdFilename(i)]];
 			init_file_data(file_data);
 
 			file_data.vmd = std::make_unique<vmd::VmdMotion>();
@@ -415,8 +421,7 @@ static bool execute_vmd_export(int currentframe)
 
 	for (int i = 0; i < pmd_num; ++i)
 	{
-		const char* filename = ExpGetPmdFilename(i);
-		FileDataForVMD& file_data = archive.data_list.at(archive.file_path_map[filename]);
+		FileDataForVMD& file_data = archive.data_list[archive.file_path_map[GetPmdFilename(i)]];
 		const int bone_num = ExpGetPmdBoneNum(i);
 		for (int k = 0; k < bone_num; ++k)
 		{
@@ -426,7 +431,7 @@ static bool execute_vmd_export(int currentframe)
 				continue;
 			}
 
-			if (file_data.bone_name_map[k] != bone_name) {
+			if (file_data.bone_name_map[k].compare(bone_name) != 0) {
 				continue;
 			}
 
@@ -452,11 +457,11 @@ static bool execute_vmd_export(int currentframe)
 				}
 			}
 
-			if (file_data.physics_bone_map.find(k) != file_data.physics_bone_map.end()) {
-				if (file_data.physics_bone_map[k] == 0) {
-					continue;
-				}
-			}
+			//if (file_data.physics_bone_map.find(k) != file_data.physics_bone_map.end()) {
+			//	if (file_data.physics_bone_map[k] == pmd::RigidBodyType::BoneConnected) {
+			//		continue;
+			//	}
+			//}
 
 			// get initial world position
 			if (file_data.pmd)
@@ -473,6 +478,10 @@ static bool execute_vmd_export(int currentframe)
 			else if (file_data.pmx)
 			{
 				pmx::PmxBone& bone = file_data.pmx->bones[k];
+				if (bone.bone_flag.Is_visible == false)
+				{
+					continue;
+				}
 				initial_trans[0] = bone.position[0];
 				initial_trans[1] = bone.position[1];
 				initial_trans[2] = bone.position[2];
@@ -484,7 +493,7 @@ static bool execute_vmd_export(int currentframe)
 			int parent_index = file_data.parent_index_map[k];
 			if (parent_index != 0xFFFF && file_data.parent_index_map.find(parent_index) != file_data.parent_index_map.end()) {
 				UMMat44d parent_world = to_ummat(ExpGetPmdBoneWorldMat(i, parent_index));
-				local = world * parent_world.inverted();
+				local = world * parent_world;//.inverted()
 			}
 			local[3][0] = world[3][0] - initial_trans[0];
 			local[3][1] = world[3][1] - initial_trans[1];
@@ -527,13 +536,13 @@ static bool execute_vmd_export(int currentframe)
 			else if (file_data.pmx)
 			{
 				pmx::PmxBone& bone = file_data.pmx->bones[k];
-				if (!(bone.bone_flag & 0x0004))
+				if (bone.bone_flag.Translatable == false)
 				{
 					bone_frame.position[0] = 0.0f;
 					bone_frame.position[1] = 0.0f;
 					bone_frame.position[2] = 0.0f;
 				}
-				if (!(bone.bone_flag & 0x0002))
+				if (bone.bone_flag.Rotatable == false)
 				{
 					bone_frame.orientation[0] = 0.0f;
 					bone_frame.orientation[1] = 0.0f;
@@ -541,7 +550,7 @@ static bool execute_vmd_export(int currentframe)
 					bone_frame.orientation[3] = 1.0f;
 				}
 				if (file_data.physics_bone_map.find(k) != file_data.physics_bone_map.end()) {
-					if (file_data.physics_bone_map[k] == 2)
+					if (file_data.physics_bone_map[k] == pmd::RigidBodyType::ConnectedPhysics)
 					{
 						bone_frame.position[0] = 0.0f;
 						bone_frame.position[1] = 0.0f;
@@ -562,14 +571,14 @@ static bool execute_vmd_export(int currentframe)
 				// expect for rigid_type == BoneConnected
 				const int parent_bone = file_data.parent_index_map[k];
 				if (file_data.physics_bone_map.find(parent_bone) != file_data.physics_bone_map.end()) {
-					if (file_data.physics_bone_map[parent_bone] == 0) {
+					if (file_data.physics_bone_map[parent_bone] == pmd::RigidBodyType::BoneConnected) {
 						bone_frame.position[0] = 0.0f;
 						bone_frame.position[1] = 0.0f;
 						bone_frame.position[2] = 0.0f;
 					}
 				}
 			}
-			file_data.vmd->bone_frames.push_back(bone_frame);
+			file_data.vmd->bone_frames.push_back(std::move(bone_frame));
 		}
 
 
@@ -578,19 +587,17 @@ static bool execute_vmd_export(int currentframe)
 			vmd::VmdIkFrame ik_frame;
 			ik_frame.frame = currentframe;
 			ik_frame.display = true;
-			for (std::map<int, int>::iterator it = file_data.ik_frame_bone_map.begin();
-				it != file_data.ik_frame_bone_map.end();
-				++it)
+			for (auto& ik_frame_bone : file_data.ik_frame_bone_map)
 			{
-				if (file_data.bone_name_map.find(it->first) != file_data.bone_name_map.end())
+				if (file_data.bone_name_map.find(ik_frame_bone.first) != file_data.bone_name_map.end())
 				{
 					vmd::VmdIkEnable ik_enable;
-					ik_enable.ik_name = file_data.bone_name_map[it->first];
+					ik_enable.ik_name = file_data.bone_name_map[ik_frame_bone.first];
 					ik_enable.enable = false;
-					ik_frame.ik_enable.push_back(ik_enable);
+					ik_frame.ik_enable.push_back(std::move(ik_enable));
 				}
 			}
-			file_data.vmd->ik_frames.push_back(ik_frame);
+			file_data.vmd->ik_frames.push_back(std::move(ik_frame));
 		}
 	}
 

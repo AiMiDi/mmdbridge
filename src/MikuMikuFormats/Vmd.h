@@ -16,11 +16,11 @@ namespace vmd
 		/// ボーン名
 		std::string name;
 		/// フレーム番号
-		int frame;
+		int frame = 0;
 		/// 位置
-		float position[3];
+		float position[3] = { 0,0,0 };
 		/// 回転
-		float orientation[4];
+		float orientation[4] = { 0,0,0,1 };
 		/// 補間曲線
 		char interpolation[4][4][4];
 
@@ -43,6 +43,20 @@ namespace vmd
 			stream->write((char*)orientation, sizeof(float) * 4);
 			stream->write((char*)interpolation, sizeof(char) * 4 * 4 * 4);
 		}
+		VmdBoneFrame(){}
+
+		VmdBoneFrame(const VmdBoneFrame&) = delete;
+
+		VmdBoneFrame(VmdBoneFrame&& other) noexcept :
+			name(std::move(other.name)),
+			frame(std::move(other.frame))			
+		{
+			std::swap(position, other.position);
+			std::swap(orientation, other.orientation);
+			std::swap(interpolation, other.interpolation);
+		}
+
+		~VmdBoneFrame() {}
 	};
 
 	/// 表情フレーム
@@ -52,9 +66,9 @@ namespace vmd
 		/// 表情名
 		std::string face_name;
 		/// 表情の重み
-		float weight;
+		float weight= 0.f;
 		/// フレーム番号
-		uint32_t frame;
+		uint32_t frame = 0;
 
 		void Read(std::istream* stream)
 		{
@@ -71,6 +85,15 @@ namespace vmd
 			stream->write((char*)&frame, sizeof(int));
 			stream->write((char*)&weight, sizeof(float));
 		}
+
+		VmdFaceFrame() {}
+
+		VmdFaceFrame(const VmdFaceFrame&) = delete;
+
+		VmdFaceFrame(VmdFaceFrame&& other) noexcept :
+			face_name(std::move(other.face_name)),
+			weight(std::move(other.weight)),
+			frame(std::move(other.frame)) {}
 	};
 
 	/// カメラフレーム
@@ -78,13 +101,13 @@ namespace vmd
 	{
 	public:
 		/// フレーム番号
-		int frame;
+		int frame = 0;
 		/// 距離
-		float distance;
+		float distance = 0.f;
 		/// 位置
-		float position[3];
+		float position[3] = { 0,0,0 };
 		/// 回転
-		float orientation[3];
+		float orientation[3] = { 0,0,0 };
 		/// 補間曲線
 		char interpolation[6][4];
 		/// 視野角
@@ -113,6 +136,20 @@ namespace vmd
 			stream->write((char*)&angle, sizeof(float));
 			stream->write((char*)unknown, sizeof(char) * 3);
 		}
+
+		VmdCameraFrame() {}
+
+		VmdCameraFrame(const VmdCameraFrame&) = delete;
+
+		VmdCameraFrame(VmdCameraFrame&& other) noexcept :
+			frame(std::move(other.frame)),
+			distance(std::move(other.distance)),
+			angle(std::move(other.angle)) {
+			std::swap(position, other.position);
+			std::swap(orientation, other.orientation);
+			std::swap(interpolation, other.interpolation);
+			std::swap(unknown, other.unknown);
+		}
 	};
 
 	/// ライトフレーム
@@ -139,6 +176,16 @@ namespace vmd
 			stream->write((char*)color, sizeof(float) * 3);
 			stream->write((char*)position, sizeof(float) * 3);
 		}
+
+		VmdLightFrame() {}
+
+		VmdLightFrame(const VmdLightFrame&) = delete;
+
+		VmdLightFrame(VmdLightFrame&& other) noexcept :
+			frame(std::move(other.frame)) {
+			std::swap(position, other.position);
+			std::swap(color, other.color);
+		}
 	};
 
 	/// IKの有効無効
@@ -153,8 +200,8 @@ namespace vmd
 	class VmdIkFrame
 	{
 	public:
-		int frame;
-		bool display;
+		int frame = 0;
+		bool display = true;
 		std::vector<VmdIkEnable> ik_enable;
 
 		void Read(std::istream *stream)
@@ -186,6 +233,15 @@ namespace vmd
 				stream->write((char*)&ik_enable.enable, sizeof(uint8_t));
 			}
 		}
+
+		VmdIkFrame() {}
+
+		VmdIkFrame(const VmdIkFrame&) = delete;
+
+		VmdIkFrame(VmdIkFrame&& other) noexcept :
+			frame(std::move(other.frame)),
+			display(std::move(other.display)),
+			ik_enable(std::move(other.ik_enable)) {}
 	};
 
 	/// VMDモーション
@@ -358,5 +414,18 @@ namespace vmd
 
 			return true;
 		}
+
+		VmdMotion() {}
+
+		VmdMotion(const VmdMotion&) = delete;
+
+		VmdMotion(VmdMotion&& other) noexcept :
+			model_name(std::move(other.model_name)),
+			version(std::move(other.version)),
+			bone_frames(std::move(other.bone_frames)),
+			face_frames(std::move(other.face_frames)),
+			camera_frames(std::move(other.camera_frames)),
+			light_frames(std::move(other.light_frames)),
+			ik_frames(std::move(other.ik_frames)) {}
 	};
 }

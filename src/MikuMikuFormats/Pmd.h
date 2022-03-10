@@ -437,12 +437,12 @@ namespace pmd
 		std::vector<PmdRigidBody> rigid_bodies;
 		std::vector<PmdConstraint> constraints;
 
-		static std::unique_ptr<PmdModel> LoadFromFile(const char *filename)
+		static std::unique_ptr<PmdModel> LoadFromFile(std::wstring& filename)
 		{
 			std::ifstream stream(filename, std::ios::binary);
 			if (stream.fail())
 			{
-				std::cerr << "could not open \"" << filename << "\"" << std::endl;
+				std::cerr << "could not open \"" << filename.c_str() << "\"" << std::endl;
 				return nullptr;
 			}
 			auto result = LoadFromStream(&stream);
