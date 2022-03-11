@@ -1237,7 +1237,7 @@ static void setMyMenu()
 
 		InsertMenuItem(hmenu, count + 1, TRUE, &minfo);
 		minfo.fMask = MIIM_ID | MIIM_TYPE;
-		minfo.dwTypeData = L"プラグイン設定";
+		minfo.dwTypeData = L"插件设置";
 		minfo.wID = 1020;
 		InsertMenuItem(hsubs, 1, TRUE, &minfo);
 
@@ -1302,8 +1302,8 @@ static INT_PTR CALLBACK DialogProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 				{
 					SendMessage(hCombo1 , CB_ADDSTRING , 0 , (LPARAM)parameter.python_script_name_list[i].c_str());
 				}
-				SendMessage(hCombo2 , CB_ADDSTRING , 0 , (LPARAM)L"実行する");
-				SendMessage(hCombo2 , CB_ADDSTRING , 0 , (LPARAM)L"実行しない");
+				SendMessage(hCombo2 , CB_ADDSTRING , 0 , (LPARAM)L"实行导出");
+				SendMessage(hCombo2 , CB_ADDSTRING , 0 , (LPARAM)L"不实行导出");
 				// ウインドウ生成時にはじめに表示するデータを指定
 				UINT index1 = SendMessage(hCombo1, CB_FINDSTRINGEXACT, -1, (LPARAM)parameter.python_script_name.c_str());
 				SendMessage(hCombo1, CB_SETCURSEL, index1, 0);
